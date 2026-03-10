@@ -1,0 +1,29 @@
+1245789-Finish report-Complete the final project report-2026-03-01-2026-03-10-high
+3256897-Update database-Review and update database tables-2026-03-02-2026-03-15-medium
+4567891-Study Java-Practice OOP concepts and exercises-2026-03-03-2026-03-20-low
+3434333-Write documentation-Prepare system documentation-2026-03-04-2026-03-12-medium
+6862397-Team meeting-Discuss project progress with team-2026-03-05-2026-03-05-high
+7823412-Test application-Run functional tests on the system-2026-03-06-2026-03-14-high
+9021345-Fix bugs-Correct issues reported in testing-2026-03-06-2026-03-18-high
+1456789-Design UI-Create layout for user interface-2026-03-07-2026-03-19-medium
+2345678-Prepare presentation-Build slides for project demo-2026-03-08-2026-03-22-low
+3456789-Code review-Review code for improvements-2026-03-08-2026-03-13-medium
+4561234-Optimize queries-Improve SQL query performance-2026-03-09-2026-03-17-high
+5672345-Backup data-Create backup of project files-2026-03-09-2026-03-09-low
+6783456-Write unit tests-Develop tests for core functions-2026-03-10-2026-03-18-high
+7894567-Update README-Add instructions to project repository-2026-03-10-2026-03-11-low
+8905678-Research libraries-Look for useful Java libraries-2026-03-11-2026-03-20-medium
+9016789-Setup server-Prepare development server environment-2026-03-11-2026-03-16-high
+1122334-Clean code-Refactor code structure-2026-03-12-2026-03-19-medium
+2233445-Check security-Verify system security measures-2026-03-12-2026-03-21-high
+3344556-Create diagrams-Design UML diagrams for documentation-2026-03-13-2026-03-18-medium
+4455667-Deploy prototype-Deploy first working version-2026-03-13-2026-03-22-high
+5566778-Analyze requirements-Review project requirements list-2026-03-14-2026-03-16-low
+6677889-Organize tasks-Schedule development tasks-2026-03-14-2026-03-17-medium
+7788990-Write report section-Prepare introduction of report-2026-03-15-2026-03-19-low
+8899001-Test login system-Check authentication process-2026-03-15-2026-03-18-high
+9900112-Improve UI design-Adjust layout and colors-2026-03-16-2026-03-23-medium
+1011223-Validate inputs-Check user input validation rules-2026-03-16-2026-03-21-high
+2122334-Document API-Write API usage documentation-2026-03-17-2026-03-24-medium
+3233445-test-test-test-test-low
+4344556-testing-testing-testing-testing-low
