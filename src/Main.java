@@ -1,9 +1,22 @@
 import java.io.File;
 import java.util.List;
 import java.util.Scanner;
+import javax.swing.*;
 
-public class Main {
+public class Main  {
 
+    public static void main(String[] args) {
+
+        // Crear la ventana
+        TaskManagerGUI ventana = new TaskManagerGUI();
+
+        // Mostrarla
+        ventana.setVisible(true);
+
+    }
+
+
+/*
     public static void main(String[] args) {
         //*******IMPORTANT******
         //try use the file route inside the project for prevent any problem with restricted access
@@ -240,5 +253,7 @@ public class Main {
 
         return true;
     }
+*/
+
 
 }
