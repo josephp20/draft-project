@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FileLoader {
-
-    // Read my file
+//we don't need  more call the File
+    /*
     public static List<String> readFile(String filePath) {
         List<String> lines = new ArrayList<>();
 
@@ -46,7 +46,7 @@ public class FileLoader {
             System.out.println("Error al actualizar el archivo: " + e.getMessage());
         }
     }
-
+*/
 
 }
 

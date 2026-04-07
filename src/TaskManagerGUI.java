@@ -1,256 +1,220 @@
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
 public class TaskManagerGUI extends JFrame {
 
-    private JTextField filePathField;
-    private JTextField titleField;
-    private JTextField descriptionField;
+    private TaskService taskService;
+
+    private JTextField txtTitle;
+    private JTextField txtDescription;
 
     private JSpinner creationDateSpinner;
     private JSpinner dueDateSpinner;
 
-    private JRadioButton lowRadio;
-    private JRadioButton mediumRadio;
-    private JRadioButton highRadio;
+    private JRadioButton rbLow;
+    private JRadioButton rbMedium;
+    private JRadioButton rbHigh;
     private ButtonGroup priorityGroup;
 
-    private JTextArea outputArea;
+    private JTextArea textArea;
 
-    private String filePath = "";
-    private TaskService taskService;
+    private JButton btnAdd;
+    private JButton btnUpdate;
+    private JButton btnDelete;
+    private JButton btnList;
+    private JButton btnReport;
+    private JButton btnClear;
 
     public TaskManagerGUI() {
-        taskService = new TaskService();
-
-        setTitle("Task Manager");
-        setSize(900, 650);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-
-        initComponents();
+        initializeDatabaseConnection();
+        initializeUI();
     }
 
-    private void initComponents() {
+    private void initializeDatabaseConnection() {
+        String databaseName;
+
+        while (true) {
+            databaseName = JOptionPane.showInputDialog(
+                    this,
+                    "Enter database name:",
+                    "Database Connection",
+                    JOptionPane.QUESTION_MESSAGE
+            );
+
+            if (databaseName == null) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Program closed.",
+                        "Exit",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+                System.exit(0);
+            }
+
+            databaseName = databaseName.trim();
+
+            if (databaseName.isEmpty()) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Database name cannot be empty.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                );
+                continue;
+            }
+            //call init database
+            if (DatabaseManager.databaseExists(databaseName)) {
+                DatabaseManager.initializeDatabase(databaseName);
+                taskService = new TaskService(databaseName);
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Database connected successfully.",
+                        "Success",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+                break;
+            } else {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Database does not exist or connection failed.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                );
+            }
+        }
+    }
+
+    private void initializeUI() {
+        setTitle("Task Manager GUI - MySQL");
+        setSize(800, 600);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
 
-        JPanel topPanel = new JPanel(new BorderLayout(5, 5));
-        JPanel filePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-
-        JLabel fileLabel = new JLabel("Selected File:");
-        filePathField = new JTextField(40);
-        filePathField.setEditable(false);
-
-        JButton browseFileButton = new JButton("Browse File");
-        browseFileButton.addActionListener(e -> browseFile());
-
-        filePanel.add(fileLabel);
-        filePanel.add(filePathField);
-        filePanel.add(browseFileButton);
-
-        topPanel.add(filePanel, BorderLayout.CENTER);
-        add(topPanel, BorderLayout.NORTH);
-
-        JPanel centerPanel = new JPanel(new GridLayout(1, 2, 10, 10));
-
-        JPanel formPanel = new JPanel(new GridLayout(7, 2, 5, 5));
-        formPanel.setBorder(BorderFactory.createTitledBorder("Task Form"));
-
-        titleField = new JTextField();
-        descriptionField = new JTextField();
-
-        creationDateSpinner = new JSpinner(new SpinnerDateModel());
-        JSpinner.DateEditor creationEditor = new JSpinner.DateEditor(creationDateSpinner, "MM-dd-yyyy");
-        creationDateSpinner.setEditor(creationEditor);
-
-        dueDateSpinner = new JSpinner(new SpinnerDateModel());
-        JSpinner.DateEditor dueEditor = new JSpinner.DateEditor(dueDateSpinner, "MM-dd-yyyy");
-        dueDateSpinner.setEditor(dueEditor);
-
-        JPanel priorityPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        lowRadio = new JRadioButton("low");
-        mediumRadio = new JRadioButton("medium");
-        highRadio = new JRadioButton("high");
-
-        priorityGroup = new ButtonGroup();
-        priorityGroup.add(lowRadio);
-        priorityGroup.add(mediumRadio);
-        priorityGroup.add(highRadio);
-
-        lowRadio.setSelected(true);
-
-        priorityPanel.add(lowRadio);
-        priorityPanel.add(mediumRadio);
-        priorityPanel.add(highRadio);
+        JPanel formPanel = new JPanel(new GridLayout(4, 2, 8, 8));
 
         formPanel.add(new JLabel("Title:"));
-        formPanel.add(titleField);
+        txtTitle = new JTextField();
+        formPanel.add(txtTitle);
 
         formPanel.add(new JLabel("Description:"));
-        formPanel.add(descriptionField);
+        txtDescription = new JTextField();
+        formPanel.add(txtDescription);
 
-        formPanel.add(new JLabel("Creation Date:"));
+        formPanel.add(new JLabel("Creation Date (MM-dd-yyyy):"));
+        creationDateSpinner = createDateSpinner();
         formPanel.add(creationDateSpinner);
 
-        formPanel.add(new JLabel("Due Date:"));
+        formPanel.add(new JLabel("Due Date (MM-dd-yyyy):"));
+        dueDateSpinner = createDateSpinner();
         formPanel.add(dueDateSpinner);
 
-        formPanel.add(new JLabel("Priority:"));
-        formPanel.add(priorityPanel);
+        add(formPanel, BorderLayout.NORTH);
 
-        JButton clearButton = new JButton("Clear Fields");
-        clearButton.addActionListener(e -> clearFields());
-        clearButton.setPreferredSize(new Dimension(120, 25));
+        JPanel priorityPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        priorityPanel.setBorder(BorderFactory.createTitledBorder("Priority"));
 
+        rbLow = new JRadioButton("low");
+        rbMedium = new JRadioButton("medium");
+        rbHigh = new JRadioButton("high");
 
+        priorityGroup = new ButtonGroup();
+        priorityGroup.add(rbLow);
+        priorityGroup.add(rbMedium);
+        priorityGroup.add(rbHigh);
 
-        JPanel buttonContainer = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonContainer.add(clearButton);
+        rbLow.setSelected(true);
 
-        formPanel.add(new JLabel(""));
-        formPanel.add(buttonContainer);
+        priorityPanel.add(rbLow);
+        priorityPanel.add(rbMedium);
+        priorityPanel.add(rbHigh);
 
-        centerPanel.add(formPanel);
+        add(priorityPanel, BorderLayout.WEST);
 
-        outputArea = new JTextArea();
-        outputArea.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(outputArea);
-        scrollPane.setBorder(BorderFactory.createTitledBorder("Output"));
+        textArea = new JTextArea();
+        textArea.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        add(scrollPane, BorderLayout.CENTER);
 
-        centerPanel.add(scrollPane);
+        JPanel buttonPanel = new JPanel(new GridLayout(2, 3, 8, 8));
 
-        add(centerPanel, BorderLayout.CENTER);
+        btnAdd = new JButton("Add Task");
+        btnUpdate = new JButton("Update Task");
+        btnDelete = new JButton("Delete Task");
+        btnList = new JButton("List Tasks");
+        btnReport = new JButton("Generate Report");
+        btnClear = new JButton("Clear Fields");
 
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 5, 10, 10));
-
-        JButton addButton = new JButton("Add Task");
-        JButton removeButton = new JButton("Delete Task");
-        JButton listButton = new JButton("List Tasks");
-        JButton updateButton = new JButton("Update Task");
-        JButton reportButton = new JButton("Generate Report");
-
-        addButton.addActionListener(e -> addTask());
-        removeButton.addActionListener(e -> removeTask());
-        listButton.addActionListener(e -> listTasks());
-        updateButton.addActionListener(e -> updateTask());
-        reportButton.addActionListener(e -> generateReport());
-
-        buttonPanel.add(addButton);
-        buttonPanel.add(removeButton);
-        buttonPanel.add(listButton);
-        buttonPanel.add(updateButton);
-        buttonPanel.add(reportButton);
+        buttonPanel.add(btnAdd);
+        buttonPanel.add(btnUpdate);
+        buttonPanel.add(btnDelete);
+        buttonPanel.add(btnList);
+        buttonPanel.add(btnReport);
+        buttonPanel.add(btnClear);
 
         add(buttonPanel, BorderLayout.SOUTH);
+
+        btnAdd.addActionListener(e -> addTask());
+        btnUpdate.addActionListener(e -> updateTask());
+        btnDelete.addActionListener(e -> deleteTask());
+        btnList.addActionListener(e -> listTasks());
+        btnReport.addActionListener(e -> generateReport());
+        btnClear.addActionListener(e -> clearFields());
     }
 
-    private void browseFile() {
-        JFileChooser fileChooser = new JFileChooser();
-        int result = fileChooser.showOpenDialog(this);
-
-        if (result == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = fileChooser.getSelectedFile();
-            filePath = selectedFile.getAbsolutePath();
-            filePathField.setText(filePath);
-            outputArea.setText("File loaded successfully.\n");
-        }
-    }
-
-    private boolean isFileLoaded() {
-        if (filePath.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please select a valid file first.");
-            return false;
-        }
-        return true;
+    private JSpinner createDateSpinner() {
+        SpinnerDateModel model = new SpinnerDateModel();
+        JSpinner spinner = new JSpinner(model);
+        JSpinner.DateEditor editor = new JSpinner.DateEditor(spinner, "MM-dd-yyyy");
+        spinner.setEditor(editor);
+        spinner.setValue(new Date());
+        return spinner;
     }
 
     private String getSelectedPriority() {
-        if (lowRadio.isSelected()) return "low";
-        if (mediumRadio.isSelected()) return "medium";
-        if (highRadio.isSelected()) return "high";
-        return "";
+        if (rbLow.isSelected()) {
+            return "low";
+        } else if (rbMedium.isSelected()) {
+            return "medium";
+        } else {
+            return "high";
+        }
     }
 
-    private String formatDate(Date date) {
-        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
-        return sdf.format(date);
+    private String formatDateForDatabase(JSpinner spinner) {
+        Date date = (Date) spinner.getValue();
+        SimpleDateFormat dbFormat = new SimpleDateFormat("yyyy-MM-dd");
+        return dbFormat.format(date);
     }
 
     private void addTask() {
-        if (!isFileLoaded()) return;
-
-        String title = titleField.getText().trim();
-        String description = descriptionField.getText().trim();
-        String creationDate = formatDate((Date) creationDateSpinner.getValue());
-        String dueDate = formatDate((Date) dueDateSpinner.getValue());
+        String title = txtTitle.getText().trim();
+        String description = txtDescription.getText().trim();
+        String creationDate = formatDateForDatabase(creationDateSpinner);
+        String dueDate = formatDateForDatabase(dueDateSpinner);
         String priority = getSelectedPriority();
 
-        if (title.isEmpty() || description.isEmpty() || priority.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please fill in all fields.");
-            return;
+        String result = taskService.addTask(title, description, creationDate, dueDate, priority);
+
+        JOptionPane.showMessageDialog(this, result);
+
+        if (result.equalsIgnoreCase("Task added successfully.")) {
+            listTasks();
+            clearFields();
         }
-
-        String result = taskService.addTask(filePath, title, description, creationDate, dueDate, priority);
-        outputArea.setText(result + "\n");
-        clearFields();
-        listTasks();
-    }
-
-    private void removeTask() {
-        if (!isFileLoaded()) return;
-
-        String id = JOptionPane.showInputDialog(this, "Enter the Task ID to delete:");
-
-        if (id == null) {
-            return;
-        }
-
-        id = id.trim();
-
-        if (id.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Task ID cannot be empty.");
-            return;
-        }
-
-        boolean removed = taskService.removeTask(filePath, id);
-
-        if (removed) {
-            outputArea.setText("Task deleted successfully.\n");
-        } else {
-            outputArea.setText("Task ID not found.\n");
-        }
-
-        listTasks();
-    }
-
-    private void listTasks() {
-        if (!isFileLoaded()) return;
-
-        List<String> tasks = taskService.listTasks(filePath);
-
-        if (tasks.isEmpty()) {
-            outputArea.setText("No tasks available.\n");
-            return;
-        }
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("=== ALL TASKS ===\n");
-
-        for (String task : tasks) {
-            sb.append(task).append("\n");
-        }
-
-        outputArea.setText(sb.toString());
     }
 
     private void updateTask() {
-        if (!isFileLoaded()) return;
-
-        String id = JOptionPane.showInputDialog(this, "Enter the Task ID to update:");
+        String id = JOptionPane.showInputDialog(
+                this,
+                "Enter Task ID to update:",
+                "Update Task",
+                JOptionPane.QUESTION_MESSAGE
+        );
 
         if (id == null) {
             return;
@@ -259,59 +223,106 @@ public class TaskManagerGUI extends JFrame {
         id = id.trim();
 
         if (id.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Task ID cannot be empty.");
+            JOptionPane.showMessageDialog(this, "Task ID is required.");
             return;
         }
 
-        String title = titleField.getText().trim();
-        String description = descriptionField.getText().trim();
-        String creationDate = formatDate((Date) creationDateSpinner.getValue());
-        String dueDate = formatDate((Date) dueDateSpinner.getValue());
+        String title = txtTitle.getText().trim();
+        String description = txtDescription.getText().trim();
+        String creationDate = formatDateForDatabase(creationDateSpinner);
+        String dueDate = formatDateForDatabase(dueDateSpinner);
         String priority = getSelectedPriority();
 
-        if (title.isEmpty() || description.isEmpty() || priority.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please fill in all fields before updating.");
+        boolean updated = taskService.updateTask(id, title, description, creationDate, dueDate, priority);
+
+        if (updated) {
+            JOptionPane.showMessageDialog(this, "Task updated successfully.");
+            listTasks();
+            clearFields();
+        } else {
+            JOptionPane.showMessageDialog(this, "Task not found or update failed.");
+        }
+    }
+
+    private void deleteTask() {
+        String id = JOptionPane.showInputDialog(
+                this,
+                "Enter Task ID to delete:",
+                "Delete Task",
+                JOptionPane.QUESTION_MESSAGE
+        );
+
+        if (id == null) {
             return;
         }
 
-        boolean updated = taskService.updateTask(filePath, id, title, description, creationDate, dueDate, priority);
+        id = id.trim();
 
-        if (updated) {
-            outputArea.setText("Task updated successfully.\n");
-        } else {
-            outputArea.setText("Task ID not found or invalid priority.\n");
+        if (id.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Task ID is required.");
+            return;
         }
 
-        clearFields();
-        listTasks();
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Are you sure you want to delete task ID " + id + "?",
+                "Confirm Delete",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            boolean removed = taskService.removeTask(id);
+
+            if (removed) {
+                JOptionPane.showMessageDialog(this, "Task removed successfully.");
+                listTasks();
+                clearFields();
+            } else {
+                JOptionPane.showMessageDialog(this, "Task not found or delete failed.");
+            }
+        }
+    }
+
+    private void listTasks() {
+        List<String> tasks = taskService.listTasks();
+        textArea.setText("");
+
+        if (tasks.isEmpty()) {
+            textArea.setText("No tasks found.");
+            return;
+        }
+
+        textArea.append("Task List: \n\n");
+        for (String task : tasks) {
+            textArea.append(task + "\n");
+        }
     }
 
     private void generateReport() {
-        if (!isFileLoaded()) return;
-
-        TaskReport report = taskService.generatePriorityReport(filePath);
+        TaskReport report = taskService.generatePriorityReport();
 
         StringBuilder sb = new StringBuilder();
-        sb.append("===== TASK REPORT =====\n");
-        sb.append("Total Tasks: ").append(report.getTotalTasks()).append("\n");
-        sb.append("High Priority Tasks: ").append(report.getHighCount()).append("\n");
-        sb.append("Medium Priority Tasks: ").append(report.getMediumCount()).append("\n");
-        sb.append("Low Priority Tasks: ").append(report.getLowCount()).append("\n");
+        sb.append("Report: \n\n");
+        sb.append("Total tasks: ").append(report.getTotalTasks()).append("\n");
+        sb.append("Low priority: ").append(report.getLowCount()).append("\n");
+        sb.append("Medium priority: ").append(report.getMediumCount()).append("\n");
+        sb.append("High priority: ").append(report.getHighCount()).append("\n");
 
-        outputArea.setText(sb.toString());
+        textArea.setText(sb.toString());
     }
 
     private void clearFields() {
-        titleField.setText("");
-        descriptionField.setText("");
+        txtTitle.setText("");
+        txtDescription.setText("");
         creationDateSpinner.setValue(new Date());
         dueDateSpinner.setValue(new Date());
-        lowRadio.setSelected(true);
+        rbLow.setSelected(true);
     }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            new TaskManagerGUI().setVisible(true);
+            TaskManagerGUI gui = new TaskManagerGUI();
+            gui.setVisible(true);
         });
     }
 }

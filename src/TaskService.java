@@ -1,124 +1,168 @@
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public class TaskService {
 
-    public String addTask(String filePath, String title, String description,
+    private String databaseName;
+
+    public TaskService(String databaseName) {
+        this.databaseName = databaseName;
+    }
+
+    public String addTask(String title, String description,
                           String creationDate, String dueDate, String priority) {
+
+        if (isEmpty(title) || isEmpty(description) || isEmpty(creationDate)
+                || isEmpty(dueDate) || isEmpty(priority)) {
+            return "All fields are required.";
+        }
 
         if (!isValidPriority(priority)) {
             return "Invalid priority.";
         }
 
-        Random random = new Random();
-        int id = 1000000 + random.nextInt(9000000);
+        String sql = "INSERT INTO task (title, description, creation_date, due_date, priority) VALUES (?, ?, ?, ?, ?)";
 
-        String record = id + "-" + title + "-" + description + "-" +
-                creationDate + "-" + dueDate + "-" + priority.toLowerCase();
+        try (Connection conn = DatabaseManager.getConnection(databaseName);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-        FileLoader.addingData(filePath, record);
-        return "Task added successfully.";
+            ps.setString(1, title);
+            ps.setString(2, description);
+            ps.setDate(3, Date.valueOf(creationDate));
+            ps.setDate(4, Date.valueOf(dueDate));
+            ps.setString(5, priority.toLowerCase());
+
+            int rows = ps.executeUpdate();
+
+            if (rows > 0) {
+                return "Task added successfully.";
+            } else {
+                return "Task could not be added.";
+            }
+
+        } catch (IllegalArgumentException e) {
+            return "Invalid date format. Use yyyy-mm-dd.";
+        } catch (Exception e) {
+            return "Error adding task: " + e.getMessage();
+        }
     }
 
-    public boolean removeTask(String filePath, String idToRemove) {
-        List<String> currentData = FileLoader.readFile(filePath);
-
-        if (currentData.isEmpty()) {
+    public boolean removeTask(String idToRemove) {
+        if (isEmpty(idToRemove)) {
             return false;
         }
 
-        boolean found = false;
-        List<String> updatedData = new ArrayList<>();
+        String sql = "DELETE FROM task WHERE id = ?";
 
-        for (String task : currentData) {
-            String[] parts = task.split("-", 2);
+        try (Connection conn = DatabaseManager.getConnection(databaseName);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            if (parts[0].equals(idToRemove)) {
-                found = true;
-            } else {
-                updatedData.add(task);
+            ps.setInt(1, Integer.parseInt(idToRemove));
+
+            int rows = ps.executeUpdate();
+            return rows > 0;
+
+        } catch (Exception e) {
+            System.out.println("Error deleting task: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public List<String> listTasks() {
+        List<String> tasks = new ArrayList<>();
+
+        String sql = "SELECT id, title, description, creation_date, due_date, priority FROM task ORDER BY id";
+
+        try (Connection conn = DatabaseManager.getConnection(databaseName);
+             Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+
+            while (rs.next()) {
+                String record = rs.getInt("id") + " - " +
+                        rs.getString("title") + " - " +
+                        rs.getString("description") + " - " +
+                        rs.getDate("creation_date") + " - " +
+                        rs.getDate("due_date") + " - " +
+                        rs.getString("priority");
+
+                tasks.add(record);
             }
+
+        } catch (Exception e) {
+            System.out.println("Error listing tasks: " + e.getMessage());
         }
 
-        if (found) {
-            FileLoader.updateData(filePath, updatedData);
-        }
-
-        return found;
+        return tasks;
     }
 
-    public List<String> listTasks(String filePath) {
-        return FileLoader.readFile(filePath);
-    }
-
-    public boolean updateTask(String filePath, String idToUpdate, String newTitle,
+    public boolean updateTask(String idToUpdate, String newTitle,
                               String newDescription, String newCreationDate,
                               String newDueDate, String newPriority) {
+
+        if (isEmpty(idToUpdate) || isEmpty(newTitle) || isEmpty(newDescription)
+                || isEmpty(newCreationDate) || isEmpty(newDueDate) || isEmpty(newPriority)) {
+            return false;
+        }
 
         if (!isValidPriority(newPriority)) {
             return false;
         }
 
-        List<String> tasks = FileLoader.readFile(filePath);
+        String sql = "UPDATE task SET title = ?, description = ?, creation_date = ?, due_date = ?, priority = ? WHERE id = ?";
 
-        if (tasks.isEmpty()) {
+        try (Connection conn = DatabaseManager.getConnection(databaseName);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, newTitle);
+            ps.setString(2, newDescription);
+            ps.setDate(3, Date.valueOf(newCreationDate));
+            ps.setDate(4, Date.valueOf(newDueDate));
+            ps.setString(5, newPriority.toLowerCase());
+            ps.setInt(6, Integer.parseInt(idToUpdate));
+
+            int rows = ps.executeUpdate();
+            return rows > 0;
+
+        } catch (Exception e) {
+            System.out.println("Error updating task: " + e.getMessage());
             return false;
         }
-
-        boolean taskFound = false;
-        List<String> newData = new ArrayList<>();
-
-        for (String task : tasks) {
-            String[] parts = task.split("-", 6);
-
-            if (parts[0].equals(idToUpdate)) {
-                taskFound = true;
-
-                String updatedRecord = idToUpdate + "-" +
-                        newTitle + "-" +
-                        newDescription + "-" +
-                        newCreationDate + "-" +
-                        newDueDate + "-" +
-                        newPriority.toLowerCase();
-
-                newData.add(updatedRecord);
-            } else {
-                newData.add(task);
-            }
-        }
-
-        if (taskFound) {
-            FileLoader.updateData(filePath, newData);
-        }
-
-        return taskFound;
     }
 
-    public TaskReport generatePriorityReport(String filePath) {
-        List<String> reportTasks = FileLoader.readFile(filePath);
-
+    public TaskReport generatePriorityReport() {
         int totalTasks = 0;
         int lowCount = 0;
         int mediumCount = 0;
         int highCount = 0;
 
-        for (String task : reportTasks) {
-            String[] parts = task.split("-");
+        String sql = "SELECT priority, COUNT(*) AS total FROM task GROUP BY priority";
 
-            if (parts.length > 0) {
-                totalTasks++;
+        try (Connection conn = DatabaseManager.getConnection(databaseName);
+             Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
 
-                String taskPriority = parts[parts.length - 1].trim().toLowerCase();
+            while (rs.next()) {
+                String priority = rs.getString("priority").toLowerCase();
+                int count = rs.getInt("total");
 
-                if (taskPriority.equals("low")) {
-                    lowCount++;
-                } else if (taskPriority.equals("medium")) {
-                    mediumCount++;
-                } else if (taskPriority.equals("high")) {
-                    highCount++;
+                totalTasks += count;
+
+                if (priority.equals("low")) {
+                    lowCount = count;
+                } else if (priority.equals("medium")) {
+                    mediumCount = count;
+                } else if (priority.equals("high")) {
+                    highCount = count;
                 }
             }
+
+        } catch (Exception e) {
+            System.out.println("Error generating report: " + e.getMessage());
         }
 
         return new TaskReport(totalTasks, lowCount, mediumCount, highCount);
@@ -131,5 +175,9 @@ public class TaskService {
 
         String value = priority.toLowerCase();
         return value.equals("low") || value.equals("medium") || value.equals("high");
+    }
+
+    private boolean isEmpty(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }
