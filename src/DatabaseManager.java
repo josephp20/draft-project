@@ -3,12 +3,25 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 import java.sql.ResultSet;
 
+/**
+ * Utility class for connection and setup.
+ */
 public class DatabaseManager {
-     //stablish connection variables
+
+    /** Database URL (without DB name) */
     private static final String URL = "jdbc:mysql://127.0.0.1:3306/";
+
+    /** DB username */
     private static final String USER = "root";
+
+    /** DB password */
     private static final String PASSWORD = "root";
 
+    /**
+     * Checks if a database exists.
+     * @param dbName database name
+     * @return true if exists, false otherwise
+     */
     public static boolean databaseExists(String dbName) {
         String sql = "SHOW DATABASES LIKE '" + dbName + "'";
 
@@ -23,11 +36,20 @@ public class DatabaseManager {
             return false;
         }
     }
-    //IMPORTANT
+
+    /**
+     * Gets a connection to a database.
+     * @param dbName database name
+     * @return Connection object
+     */
     public static Connection getConnection(String dbName) throws Exception {
         return DriverManager.getConnection(URL + dbName, USER, PASSWORD);
     }
 
+    /**
+     * Creates task table if not exists.
+     * @param dbName database name
+     */
     public static void initializeDatabase(String dbName) {
         String sql = """
                 CREATE TABLE IF NOT EXISTS task (
@@ -44,10 +66,9 @@ public class DatabaseManager {
              Statement st = conn.createStatement()) {
 
             st.execute(sql);
-            System.out.println("Table checked/created successfully.");
 
         } catch (Exception e) {
-            System.out.println("Error initializing database: " + e.getMessage());
+            System.out.println("Error: " + e.getMessage());
         }
     }
 }

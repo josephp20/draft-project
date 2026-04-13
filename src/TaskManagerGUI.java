@@ -4,30 +4,36 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * GUI application for managing tasks using Swing.
+ * Allows user to add, update, delete, list tasks and generate reports.
+ */
 public class TaskManagerGUI extends JFrame {
 
+    // Service to handle database operations
     private TaskService taskService;
 
+    // Input fields
     private JTextField txtTitle;
     private JTextField txtDescription;
 
+    // Date selectors
     private JSpinner creationDateSpinner;
     private JSpinner dueDateSpinner;
 
-    private JRadioButton rbLow;
-    private JRadioButton rbMedium;
-    private JRadioButton rbHigh;
+    // Priority options
+    private JRadioButton rbLow, rbMedium, rbHigh;
     private ButtonGroup priorityGroup;
 
+    // Output area
     private JTextArea textArea;
 
-    private JButton btnAdd;
-    private JButton btnUpdate;
-    private JButton btnDelete;
-    private JButton btnList;
-    private JButton btnReport;
-    private JButton btnClear;
+    // Buttons
+    private JButton btnAdd, btnUpdate, btnDelete, btnList, btnReport, btnClear;
 
+    /**
+     * Constructor - initializes DB and UI
+     */
     public TaskManagerGUI() {
         initializeDatabaseConnection();
         initializeUI();
